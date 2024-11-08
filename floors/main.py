@@ -8,16 +8,16 @@ from PyQt5.QtCore import Qt
 class OpenGLWidget(QGLWidget):
     def __init__(self, parent=None):
         super(OpenGLWidget, self).__init__(parent)
-        self.current_floor = 4  # Iniciar en el piso 5 (índice 4)
+        self.current_floor = 4  # Iniciar en el piso 5 
 
     def set_floor(self, floor_index):
         """Cambia el piso actual y renderiza el nuevo piso."""
         self.current_floor = floor_index
-        self.update()  # Forzar la actualización de la pantalla
+        self.update() 
 
     def initializeGL(self):
         """Inicialización de OpenGL (se ejecuta una vez)."""
-        self.setFixedSize(1280 , 720)  # Tamaño fijo para el área de OpenGL
+        self.setFixedSize(1280 , 720) 
 
     def paintGL(self):
         """Función para renderizar usando OpenGL."""
@@ -27,10 +27,9 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Simulador de Terremotos')
-        self.current_floor = 4  # Comienza en el piso 5 (índice 4)
+        self.current_floor = 4  # Comienza en el piso 5 
         self.total_floors = 5
 
-        # Creamos un widget OpenGL personalizado
         self.opengl_widget = OpenGLWidget(self)
 
         # Label que muestra en qué piso estamos
@@ -63,7 +62,7 @@ class MainWindow(QMainWindow):
         # Timer para actualizar la simulación
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_simulation)
-        self.timer.start(100)  # Actualiza cada 100 ms
+        self.timer.start(100)  # Bucle de 100 ms
 
     def prev_floor(self):
         """Función para ir al piso anterior."""
@@ -86,7 +85,7 @@ class MainWindow(QMainWindow):
         """Función que fuerza el redibujado de OpenGL cada vez que se actualiza."""
         self.opengl_widget.update()
 
-if __name__ == "__main__":
+def start_simulation():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()

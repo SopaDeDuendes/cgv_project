@@ -3,9 +3,8 @@ from PyQt5.QtWidgets import QApplication, QOpenGLWidget
 from PyQt5.QtCore import Qt, QTimer
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import numpy as np
 import random
-import pygame as pg  # Asegúrate de tener pygame instalado
+import pygame as pg  
 
 class Texture:
     def __init__(self, path):
@@ -38,10 +37,10 @@ class VentanaOpenGL(QOpenGLWidget):
         self.edificios = self.generar_edificios()
         self.texture_loader = None
 
-        # Inicializa el temporizador
+        # Temporizador para bucle
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.animar_edificios)  # Conectar el temporizador a la función de animación
-        self.timer.start(100)  # Llama a la función cada 100 ms (ajusta este valor según tu necesidad)
+        self.timer.start(100) 
 
 
     def initializeGL(self):
@@ -49,8 +48,8 @@ class VentanaOpenGL(QOpenGLWidget):
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glEnable(GL_TEXTURE_2D)
 
-        # Cargar la textura aquí
-        self.texture_loader = Texture('assets/spray.jpg')  # Ruta a tu textura
+        # Cargar la textura 
+        self.texture_loader = Texture('assets/spray.jpg')
 
     def resizeGL(self, width, height):
         glViewport(0, 0, width, height)
@@ -60,45 +59,42 @@ class VentanaOpenGL(QOpenGLWidget):
         glMatrixMode(GL_MODELVIEW)
 
     def paintGL(self):
-    # Establecer el color de fondo (celeste)
-        glClearColor(0.5, 0.7, 1.0, 1.0)  # Color celeste (RGB)
+        # Color de fondo (celeste)
+        glClearColor(0.5, 0.7, 1.0, 1.0)  
         
-        # Limpiar el búfer de color y profundidad
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
         glLoadIdentity()
 
-        # Ajustar la cámara según el valor de zoom
-        glTranslatef(0, -2, self.zoom)  # Usar el valor de zoom para la posición de la cámara
+        # Ajustes de la cámara 
+        glTranslatef(0, -2, self.zoom)  # zoom 
         glRotatef(self.angle_x, 1, 0, 0)
         glRotatef(self.angle_y, 0, 1, 0)
 
-        # Dibujar el suelo
+        # Suelo
         self.dibujar_suelo()
 
-        # Dibujar edificios
+        # Edificios
         self.dibujar_edificios()
 
     def dibujar_suelo(self):
-        # Configurar el color del suelo (por ejemplo, verde claro)
-        glColor3f(0.3, 0.5, 0.3)  # Color verde claro
+        # Color del suelo
+        glColor3f(0.3, 0.5, 0.3)  
 
-        # Comenzar a dibujar el suelo como un cuadrado
         glBegin(GL_QUADS)
         
-        # Definir los vértices del suelo
-        glVertex3f(-10, 0, -10)  # Vértice inferior izquierdo
-        glVertex3f(10, 0, -10)   # Vértice inferior derecho
-        glVertex3f(10, 0, 10)    # Vértice superior derecho
-        glVertex3f(-10, 0, 10)   # Vértice superior izquierdo
+        glVertex3f(-10, 0, -10) 
+        glVertex3f(10, 0, -10) 
+        glVertex3f(10, 0, 10)   
+        glVertex3f(-10, 0, 10) 
 
         glEnd()
 
     def generar_edificios(self):
         edificios = []
-        for _ in range(10):  # Cambiar la cantidad de filas a 10
+        for _ in range(10):  # Filas de 10
             fila = []
-            for _ in range(10):  # Cambiar la cantidad de columnas a 10
+            for _ in range(10):  # Columnas de 10
                 width = 0.8
                 depth = 0.8
                 height = random.uniform(1.5, 3.0)
@@ -107,7 +103,6 @@ class VentanaOpenGL(QOpenGLWidget):
         return edificios
 
     def desplazamiento_temblor(self):
-        # Genera un pequeño desplazamiento aleatorio
         offset_x = random.uniform(-0.05, 0.05)
         offset_y = random.uniform(-0.05, 0.05)
         offset_z = random.uniform(-0.05, 0.05)
@@ -129,7 +124,7 @@ class VentanaOpenGL(QOpenGLWidget):
         glScalef(width, height, depth)  # Escalar en los 3 ejes
 
         # Parte frontal
-        glBindTexture(GL_TEXTURE_2D, self.texture_loader.texture_id)  # Usar la textura cargada
+        glBindTexture(GL_TEXTURE_2D, self.texture_loader.texture_id)  # Usar textura
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-0.5, -0.5, 0.5)
@@ -177,8 +172,8 @@ class VentanaOpenGL(QOpenGLWidget):
         glVertex3f(-0.5, 0.5, 0.5)
         glEnd()
 
-        # Parte superior (sin textura, color blanco)
-        glColor3f(1.0, 1.0, 1.0)  # Cambiar el color a blanco
+        # Parte superior 
+        glColor3f(1.0, 1.0, 1.0)  
         glBegin(GL_QUADS)
         glVertex3f(-0.5, 0.5, -0.5)
         glVertex3f(0.5, 0.5, -0.5)
@@ -186,7 +181,7 @@ class VentanaOpenGL(QOpenGLWidget):
         glVertex3f(-0.5, 0.5, 0.5)
         glEnd()
 
-        # Parte inferior (sin textura, color blanco)
+        # Parte inferior 
         glBegin(GL_QUADS)
         glVertex3f(-0.5, -0.5, 0.5)
         glVertex3f(0.5, -0.5, 0.5)
@@ -212,8 +207,7 @@ class VentanaOpenGL(QOpenGLWidget):
             dy = event.y() - self.last_pos.y()
             self.angle_y += dx * 0.5
             
-            # Limitar el ángulo de inclinación en el eje X (para que no puedas ver debajo del suelo)
-            self.angle_x = max(0, min(30, self.angle_x - dy * 0.5))  # Ángulo limitado entre -90 y 0 grados
+            self.angle_x = max(0, min(30, self.angle_x - dy * 0.5)) 
             
             self.last_pos = event.pos()
             self.update()
@@ -224,21 +218,20 @@ class VentanaOpenGL(QOpenGLWidget):
             self.mouse_pressed = False
 
     def animar_edificios(self):
-        # Aquí puedes actualizar la posición de los edificios
+
         for x in range(len(self.edificios)):
             for z in range(len(self.edificios[x])):
-                # Llama a la función que genera el desplazamiento de temblor
+
                 offset_x, offset_y, offset_z = self.desplazamiento_temblor()
-                # Aplica el desplazamiento directamente a los edificios
+
                 self.edificios[x][z] = (self.edificios[x][z][0],
-                                        self.edificios[x][z][1] + offset_y,  # Aquí puedes aplicar el offset
+                                        self.edificios[x][z][1] + offset_y,  
                                         self.edificios[x][z][2])
         
-        self.update()  # Actualiza la ventana para reflejar los cambios
-
+        self.update() 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    app = QApplication(sys.argv)    
     ventana = VentanaOpenGL()
     ventana.show()
     sys.exit(app.exec_())
