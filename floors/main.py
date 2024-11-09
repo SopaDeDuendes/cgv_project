@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
 
     def update_simulation(self):
         self.opengl_widget.update()
-
+# Se inicia la simulacion
 def start_simulation():
     app = QApplication(sys.argv)
     window = MainWindow()
