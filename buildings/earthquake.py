@@ -31,7 +31,7 @@ class EarthquakeSimulator(QOpenGLWidget):
         self.angle_y = 0
         self.last_pos = None
         self.mouse_pressed = False
-        self.zoom = -10
+        self.zoom = -5
 
         self.setWindowState(Qt.WindowMaximized)
         self.edificios = self.generar_edificios()
@@ -191,10 +191,6 @@ class EarthquakeSimulator(QOpenGLWidget):
 
         glPopMatrix()
 
-    def wheelEvent(self, event):
-        self.zoom += event.angleDelta().y() / 120.0  # Ajustar el zoom según el desplazamiento de la rueda
-        self.zoom = max(-20, min(-1, self.zoom))  # Limitar el rango del zoom
-        self.update()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:

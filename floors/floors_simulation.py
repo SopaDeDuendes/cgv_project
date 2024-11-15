@@ -179,6 +179,7 @@ class FloorsSimulation(QOpenGLWidget):
             person.move_towards_stair(self.stair_positions[floor_index], 0.08, self.floors[floor_index])
 
 
+
     def initializeGL(self):
         glEnable(GL_DEPTH_TEST)
         glClearColor(0.1, 0.1, 0.1, 1.0)
@@ -425,6 +426,9 @@ class FloorsSimulation(QOpenGLWidget):
         safe_zone_people = people_on_floor[:num_safe_zone]
         stair_people = people_on_floor[num_safe_zone:]
 
+        # Definir el radio de influencia de la zona segura alrededor del pilar
+        safe_zone_radius = 0.8 # Ampliamos el radio de la zona segura
+
         # Manejar personas en zonas seguras
         for person_index, person in enumerate(safe_zone_people):
             # Ignorar si ya está en una zona segura
@@ -435,11 +439,15 @@ class FloorsSimulation(QOpenGLWidget):
             target_zone_index = self.person_safe_zone[floor_index][person_index]
             target_zone_pos = self.safe_zone_positions[floor_index][target_zone_index]
 
+            # Generar una posición aleatoria dentro del radio de la zona segura (alrededor del pilar)
+            target_zone_pos_x = target_zone_pos[0] + random.uniform(-safe_zone_radius, safe_zone_radius)
+            target_zone_pos_y = target_zone_pos[1] + random.uniform(-safe_zone_radius, safe_zone_radius)
+
             # Verificar si la zona segura ya está ocupada
             if not safe_zone_occupied[target_zone_index]:
-                # Mover hacia la zona segura
+                # Mover hacia la zona segura, asegurándose de que no entre en el pilar
                 person.move_towards_safe_zone(
-                    target_zone_pos,
+                    (target_zone_pos_x, target_zone_pos_y),
                     move_speed * delta_time,
                     safe_zone_occupied[target_zone_index],
                     people_on_floor
@@ -489,7 +497,7 @@ class FloorsSimulation(QOpenGLWidget):
         # Eliminar personas transferidas al siguiente piso
         for person in to_remove:
             self.floors[floor_index].remove(person)
-        glPopAttrib() 
+        glPopAttrib()
 
     def mouseMoveEvent(self, event):
         # Cálculo del desplazamiento del mouse
