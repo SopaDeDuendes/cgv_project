@@ -24,9 +24,9 @@ class Texture:
 
         return texture_id
 
-class VentanaOpenGL(QOpenGLWidget):
+class EarthquakeSimulator(QOpenGLWidget):
     def __init__(self):
-        super(VentanaOpenGL, self).__init__()
+        super(EarthquakeSimulator, self).__init__()
         self.angle_x = 0
         self.angle_y = 0
         self.last_pos = None
@@ -36,7 +36,7 @@ class VentanaOpenGL(QOpenGLWidget):
         self.setWindowState(Qt.WindowMaximized)
         self.edificios = self.generar_edificios()
         self.texture_loader = None
-
+    
         # Temporizador para bucle
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.animar_edificios)  # Conectar el temporizador a la función de animación
@@ -231,7 +231,10 @@ class VentanaOpenGL(QOpenGLWidget):
         self.update() 
 
 if __name__ == '__main__':
+    import pygame as pg
+    pg.init()  # Inicializar Pygame antes de la creación de la ventana
+
     app = QApplication(sys.argv)    
-    ventana = VentanaOpenGL()
+    ventana = EarthquakeSimulator()
     ventana.show()
     sys.exit(app.exec_())
