@@ -8,7 +8,6 @@ class CustomButton(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
 
-        # Configuramos el estilo del botón
         self.setStyleSheet("""
             CustomButton {
                 background-color: white;
@@ -20,14 +19,13 @@ class CustomButton(QPushButton):
             }
         """)
 
-        # Aplicar sombra al botón
         self.set_shadow_effect()
 
     def set_shadow_effect(self):
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(10)
         shadow.setOffset(3, 3)
-        shadow.setColor(QColor(0, 0, 0, 160))  # Sombra suave
+        shadow.setColor(QColor(0, 0, 0, 160))  
         self.setGraphicsEffect(shadow)
         
     def set_expanding(self):
