@@ -312,6 +312,7 @@ class FloorsSimulation(QOpenGLWidget):
                 self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
                 # Lógica de impresión: mostrar distancia al objetivo
+                self.show_text_3d(f"Dist: {distance_to_zone:.2f}", person.x, height + 0.1, person.y)
             else:
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
@@ -346,12 +347,28 @@ class FloorsSimulation(QOpenGLWidget):
             self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
             # Lógica de impresión: mostrar distancia a la escalera
+            self.show_text_3d(f"Dist: {distance_to_stair:.2f}", person.x, height + 0.1, person.y)
 
         # Solo eliminar a las personas que realmente llegaron a las escaleras
         for person in to_remove:
             self.floors[floor_index].remove(person)
 
         glPopAttrib()
+
+
+    def show_text_3d(self, text, x, y, z):
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(-10, 10, -10, 10, -10, 10)  # Asegurar un rango adecuado para 3D y texto
+        glRasterPos3f(x, y, z)
+
+        painter = QPainter(self)
+        painter.begin(self)
+        painter.setFont(QFont("Helvetica", 12))
+        painter.drawText(int(x * 50), int(y * 50), text)
+        painter.end()
+
+        glPopMatrix()
 
 
     def mouseMoveEvent(self, event):
