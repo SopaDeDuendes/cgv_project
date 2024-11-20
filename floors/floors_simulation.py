@@ -3,108 +3,12 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PyQt5.QtWidgets import QOpenGLWidget
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPainter, QFont
 import random
 import math
-import pygame as pg
 
-class Texture:
-    def __init__(self, path):
-        pg.init()
-        self.texture_id = None
-        self.load_texture(path)
-        
-    def load_texture(self, path):
-        texture_surface = pg.image.load(path)
-        texture_data = pg.image.tostring(texture_surface, "RGBA", 1)
-        width, height = texture_surface.get_size()
-
-        self.texture_id = glGenTextures(1)  
-
-        glBindTexture(GL_TEXTURE_2D, self.texture_id)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-
-
-class Person:
-    def __init__(self, start_x, start_y):
-        self.x = start_x + random.uniform(-0.1, 0.1)
-        self.y = start_y + random.uniform(-0.1, 0.1)
-        self.speed = random.uniform(0.005, 0.015)
-        self.safe_zone_reached = False
-        self.target_safe_zone = None  
-
-    def move_towards_safe_zone(self, safe_zone_position, move_speed, safe_zone_occupied, others):
-        safe_x, safe_y = safe_zone_position
-
-
-        if safe_zone_occupied:
-            return
-
- 
-        if abs(self.x - safe_x) > 0.01:  
-            self.x += move_speed if self.x < safe_x else -move_speed
-        if abs(self.y - safe_y) > 0.01:  
-            self.y += move_speed if self.y < safe_y else -move_speed
-
-        self.x += random.uniform(-0.002, 0.002)
-        self.y += random.uniform(-0.002, 0.002)
-
-        self.avoid_collision(others)
-
-        if abs(self.x - safe_x) <= 0.01 and abs(self.y - safe_y) <= 0.01:
-            self.safe_zone_reached = True
-            self.target_safe_zone = None  
-
-    def move_towards_stair(self, stair_position, move_speed, others):
-        stair_x, stair_y = stair_position
-        if abs(self.x - stair_x) > 0.01:
-            self.x += move_speed if self.x < stair_x else -move_speed
-        if abs(self.y - stair_y) > 0.01:
-            self.y += move_speed if self.y < stair_y else -move_speed
-
-        self.x += random.uniform(-0.002, 0.002)
-        self.y += random.uniform(-0.002, 0.002)
-
-        self.avoid_collision(others)
-
-
-    def avoid_collision(self, others):
-
-        for other in others:
-            if other is not self:
-                distance_x = self.x - other.x
-                distance_y = self.y - other.y
-                distance = (distance_x**2 + distance_y**2)**0.5
-
-                if distance < 0.05:
-                    self.x += random.uniform(-0.01, 0.01)
-                    self.y += random.uniform(-0.01, 0.01)
-
-    def reached_stair(self, stair_position):
-
-        stair_x, stair_y = stair_position
-        return abs(self.x - stair_x) <= 0.05 and abs(self.y - stair_y) <= 0.05
-
-    def in_safe_zone(self):
-
-        return self.safe_zone_reached
-
-    def get_position(self):
-
-        return self.x, self.y
-
-    def update(self, safe_zones, stair_position, move_speed, safe_zone_occupied, others, safe_zone_count, safe_zone_limit):
-        if safe_zone_count < safe_zone_limit:
-            if not self.target_safe_zone:
-                self.target_safe_zone = random.choice(safe_zones)
-
-            self.move_towards_safe_zone(self.target_safe_zone, move_speed, safe_zone_occupied, others)
-        else:
-            self.move_towards_stair(stair_position, move_speed, others)
-
-
-import random
+from utils.texture import Texture
+from floors.person import Person
 
 class FloorsSimulation(QOpenGLWidget):
     def __init__(self):
@@ -366,12 +270,11 @@ class FloorsSimulation(QOpenGLWidget):
         glPushAttrib(GL_ALL_ATTRIB_BITS)
 
         glDisable(GL_TEXTURE_2D)
-        glColor3f(1.0, 1.0, 1.0)  
+        glColor3f(1.0, 1.0, 1.0)  # Color por defecto
 
-        move_speed = 0.08  
+        move_speed = 0.08
         people_on_floor = self.floors[floor_index]
         safe_zone_occupied = self.safe_zone_occupied[floor_index]
-
 
         to_remove = []
 
@@ -379,24 +282,22 @@ class FloorsSimulation(QOpenGLWidget):
         safe_zone_people = people_on_floor[:num_safe_zone]
         stair_people = people_on_floor[num_safe_zone:]
 
-        safe_zone_radius = 0.8 
+        safe_zone_radius = 0.8
+        stair_radius = 0.2
 
         for person_index, person in enumerate(safe_zone_people):
-            # Ignorar si ya está en una zona segura
             if person.in_safe_zone():
                 continue
 
-            # Obtener la zona segura asignada
             target_zone_index = self.person_safe_zone[floor_index][person_index]
             target_zone_pos = self.safe_zone_positions[floor_index][target_zone_index]
 
-            # Generar una posición aleatoria dentro del radio de la zona segura (alrededor del pilar)
             target_zone_pos_x = target_zone_pos[0] + random.uniform(-safe_zone_radius, safe_zone_radius)
             target_zone_pos_y = target_zone_pos[1] + random.uniform(-safe_zone_radius, safe_zone_radius)
 
-            # Verificar si la zona segura ya está ocupada
+            distance_to_zone = math.sqrt((person.x - target_zone_pos[0]) ** 2 + (person.y - target_zone_pos[1]) ** 2)
+
             if not safe_zone_occupied[target_zone_index]:
-                # Mover hacia la zona segura, asegurándose de que no entre en el pilar
                 person.move_towards_safe_zone(
                     (target_zone_pos_x, target_zone_pos_y),
                     move_speed * delta_time,
@@ -404,26 +305,27 @@ class FloorsSimulation(QOpenGLWidget):
                     people_on_floor
                 )
 
-                # Marcar zona como ocupada si llegó
                 if person.in_safe_zone():
                     safe_zone_occupied[target_zone_index] = True
 
-                # Persona que va a zona segura (amarillo)
-                self.draw_cube(person.x, height + 0.05, person.y, 0.04, (1.0, 1.0, 0.0, 1.0))  # Amarillo
+                color = (0.0, 1.0, 0.0, 1.0) if distance_to_zone <= safe_zone_radius else (1.0, 0.0, 0.0, 1.0)
+                self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
+
+                # Lógica de impresión: mostrar distancia al objetivo
             else:
-                # Si la zona está ocupada, dirigir a la persona a la escalera
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
                     move_speed * delta_time,
                     people_on_floor
                 )
+                self.draw_cube(person.x, height + 0.05, person.y, 0.04, (1.0, 0.0, 0.0, 1.0))
 
-                # Dibujar la persona en movimiento hacia las escaleras (rojo)
-                self.draw_cube(person.x, height + 0.05, person.y, 0.04, (1.0, 0.0, 0.0, 1.0))  # Rojo
-
-        # Manejar personas hacia las escaleras (para las que ya no están en zona segura)
         for person in stair_people:
-            # Si la persona no está en una zona segura, mover hacia las escaleras
+            distance_to_stair = math.sqrt(
+                (person.x - self.stair_positions[floor_index][0]) ** 2 +
+                (person.y - self.stair_positions[floor_index][1]) ** 2
+            )
+
             if not person.in_safe_zone():
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
@@ -431,24 +333,26 @@ class FloorsSimulation(QOpenGLWidget):
                     people_on_floor
                 )
 
-            # Si llegó a la escalera, mover al siguiente piso
             if person.reached_stair(self.stair_positions[floor_index]) and floor_index > 0:
                 self.floors[floor_index - 1].append(person)
                 to_remove.append(person)
 
-                # Actualizar sincronización de zonas seguras
                 if len(self.person_safe_zone[floor_index]) > 0:
                     self.person_safe_zone[floor_index - 1].append(
                         self.person_safe_zone[floor_index].pop(0)
                     )
 
-            # Dibujar la persona en movimiento hacia las escaleras (rojo)
-            self.draw_cube(person.x, height + 0.05, person.y, 0.04, (1.0, 0.0, 0.0, 1.0))  # Rojo
+            color = (0.0, 1.0, 0.0, 1.0) if distance_to_stair <= stair_radius else (1.0, 0.0, 0.0, 1.0)
+            self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-        # Eliminar personas transferidas al siguiente piso
+            # Lógica de impresión: mostrar distancia a la escalera
+
+        # Solo eliminar a las personas que realmente llegaron a las escaleras
         for person in to_remove:
             self.floors[floor_index].remove(person)
+
         glPopAttrib()
+
 
     def mouseMoveEvent(self, event):
         dx = event.x() - self.last_mouse_x

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
-from CustomButton import CustomButton
+from utils.custom_button import CustomButton
 from buildings.earthquake import EarthquakeSimulator  
 from floors.floors_simulation import FloorsSimulation  
 import pygame
@@ -34,6 +34,13 @@ class MainApp(QMainWindow):
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
+        # Maximizar la ventana al inicio
+        self.showMaximized()
+
+    def update_data(self, data):
+        """Actualizar la interfaz con los datos de la simulación"""
+        print("Datos recibidos:", data)
+        # Aquí puedes mostrar los datos en un QLabel, QListView, etc.
 
     def create_left_sidebar(self):
         left_sidebar = QWidget()
@@ -41,7 +48,7 @@ class MainApp(QMainWindow):
 
         title_label = QLabel("Simulador de Sismo")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: black;")
+        title_label.setStyleSheet("font-size: 28px; font-weight: bold; color: black;")
         sidebar_layout.addWidget(title_label)
 
         recommendations_label = QLabel("Recomendaciones en caso de Sismo:")
@@ -49,14 +56,34 @@ class MainApp(QMainWindow):
         sidebar_layout.addWidget(recommendations_label)
 
         recommendations_text = """
-        CONSEJOS: 
+        Recomendaciones proporcionadas por la Plataforma del Estado Peruano.
+        
+        ANTES DEL SISMO: 
 
-        1. Mantén la calma y busca un lugar seguro.
-        2. Agáchate, cúbrete y agárrate a algo fuerte.
-        3. Aléjate de ventanas, objetos pesados y puertas.
-        4. Si estás en un edificio, quédate adentro.
-        5. Si estás en la calle, aléjate de edificios y postes.
-        6. Después del sismo, revisa si hay daños.
+        1. Ubica las zonas seguras y estructuras firmes para protegerte.
+        2. Ten preparada una mochila de emergencia.
+        3. Participa en los simulacros de sismo de tu barrio.
+        4. Educa a los niños de tu casa sobre medidas de precaución.
+        5. Contrata un ingeniero para reforzar tu vivienda.
+
+        DURANTE EL SISMO: 
+
+        1. Aléjate de las ventanas y objetos que pueden caerse.
+        2. Si no llegas rápido a la salida, busca un espacio seguro.
+        3. No llames por teléfono. La línea estará sobrecargada, 
+        así que mejor envía mensajes de texto.
+        4. No uses ascensor.
+
+        DESPUES DEL SISMO: 
+
+        1. Revisa si hay fugas de gas que podrían causar fuego.
+        2. Llamar a los números de emergencia como: los bomberos 116, 
+        Cruz Roja (01) 2660481 y el Sistema de Atención Móvil de Urgencia (SAMU) 106.
+        3. Auxilia a los heridos.
+        4. Ten cuidado con las posibles réplicas. Evita estar cerca a 
+        casas que han sido afectadas por el sismo.
+        5. Si estás cerca al mar, aléjate de la zona hasta que se 
+        descarte la posibilidad de un maremoto.
         """
         recommendations_details = QLabel(recommendations_text)
         recommendations_details.setStyleSheet("font-size: 16px; color: black;")
@@ -113,7 +140,7 @@ class MainApp(QMainWindow):
             pygame.mixer.music.stop()
             print("Sonido apagado")
         else:
-            pygame.mixer.music.load("assets/sirena.mp3")
+            pygame.mixer.music.load("assets/sirena.wav")    
             pygame.mixer.music.set_volume(0.5)  
             pygame.mixer.music.play(-1)  
             print("Sonido encendido")

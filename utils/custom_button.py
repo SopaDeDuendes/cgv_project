@@ -1,6 +1,6 @@
 # custom_button.py
 from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 
