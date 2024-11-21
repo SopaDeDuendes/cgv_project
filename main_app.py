@@ -21,13 +21,19 @@ class MainApp(QMainWindow):
         main_layout.addWidget(self.left_sidebar)
 
         self.central_widget = QStackedWidget()
-        self.earthquake_view = EarthquakeSimulator()  # Vista inicial de terremoto
-        self.simulator_view = FloorsSimulation()
+        self.earthquake_view = EarthquakeSimulator()  # Vista de terremoto
+        self.simulator_view = FloorsSimulation()  # Vista de simulador de pisos
 
         self.central_widget.addWidget(self.earthquake_view)
         self.central_widget.addWidget(self.simulator_view)
 
-        self.central_widget.setCurrentWidget(self.earthquake_view)  # Cambiar por la vista inicial (terremoto)
+        # Cambiar la vista inicial al simulador
+        self.central_widget.setCurrentWidget(self.simulator_view)
+
+        # Mostrar temporizador y descripción desde el inicio
+        self.timer_label.show()
+        self.timer_description.show()
+
 
         main_layout.addWidget(self.central_widget)
 
@@ -43,6 +49,7 @@ class MainApp(QMainWindow):
         self.elapsed_time = 0
         self.is_simulation_running = False
 
+        self.switch_to_simulator()
         # Conectar señal del simulador
         self.connect_signal_from_simulator()
         self.initialize_sound()
@@ -173,8 +180,8 @@ class MainApp(QMainWindow):
 
 
         # Este texto se oculta al principio, se mostrará solo durante la simulación
-        self.timer_label.hide()
-        self.timer_description.hide()
+        self.recommendations_label.hide()
+        self.recommendations_details.hide()
 
         buttons_widget = QWidget()
         buttons_layout = QHBoxLayout()
