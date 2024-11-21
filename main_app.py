@@ -134,9 +134,17 @@ class MainApp(QMainWindow):
         # Texto adicional debajo del temporizador
         # Texto explicativo sobre la simulación
         self.simulation_description = """
-        LOS CUADRADOS REPRESENTAN A LAS PERSONAS<br>
-        <img src="assets/safe_zone_sign.png" width="30" height="30"> CUBOS ROJOS: representan cuando la persona toma una decisión que lo pone en peligro<br><br>
-        <img src="assets/cubo_verde.png" width="30" height="30"> CUBOS VERDES: representa cuando la persona toma una decisión correcta para ponerse a salvo
+        <b>LOS CUBOS REPRESENTAN PERSONAS EVACUANDO</b> <br><br><br>
+        
+        🟥 = representan cuando la persona toma 
+        una decisión que lo pone en peligro <br>
+        🟩 =  representa cuando la persona toma 
+        una decisión correcta para ponerse a salvo <br><br>
+        
+        <img src="assets/stair_sign.png" width="40" height="40">  = Esta señal representa donde se encuentran las escaleras a la salida <br>
+
+
+        <img src="assets/safe_zone_sign.png" width="40" height="40"> = Esta señal indica los pilares que son resistentes en situaciones de sismos <br>
         """
 
         # Crear el QLabel con el texto HTML
