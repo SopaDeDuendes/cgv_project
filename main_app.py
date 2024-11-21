@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QApplication 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl,QTimer
 from utils.custom_button import CustomButton
 from buildings.earthquake import EarthquakeSimulator  
 from floors.floors_simulation import FloorsSimulation  
@@ -21,13 +21,13 @@ class MainApp(QMainWindow):
         main_layout.addWidget(self.left_sidebar)
 
         self.central_widget = QStackedWidget()
-        self.earthquake_view = EarthquakeSimulator()
+        self.earthquake_view = EarthquakeSimulator()  # Vista inicial de terremoto
         self.simulator_view = FloorsSimulation()
 
         self.central_widget.addWidget(self.earthquake_view)
         self.central_widget.addWidget(self.simulator_view)
 
-        self.central_widget.setCurrentWidget(self.simulator_view)  # Cambiar por la vista inicial
+        self.central_widget.setCurrentWidget(self.earthquake_view)  # Cambiar por la vista inicial (terremoto)
 
         main_layout.addWidget(self.central_widget)
 
@@ -37,10 +37,46 @@ class MainApp(QMainWindow):
         # Maximizar la ventana al inicio
         self.showMaximized()
 
-    def update_data(self, data):
-        """Actualizar la interfaz con los datos de la simulación"""
-        print("Datos recibidos:", data)
-        # Aquí puedes mostrar los datos en un QLabel, QListView, etc.
+        # Inicializar temporizador
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_timer)
+        self.elapsed_time = 0
+        self.is_simulation_running = False
+
+    def update_timer(self):
+        """Actualizar el temporizador."""
+        if self.is_simulation_running:
+            self.elapsed_time += 1
+            minutes = self.elapsed_time // 60
+            seconds = self.elapsed_time % 60
+            self.timer_label.setText(f"Tiempo: {minutes}:{seconds:02d}")
+
+    def switch_to_simulator(self):
+        """Cambiar a la vista de simulación de edificios."""
+        self.central_widget.setCurrentWidget(self.simulator_view)
+        self.timer_label.show()  # Mostrar el temporizador
+        self.timer_description.show()  # Mostrar el texto adicional
+        self.start_timer()  # Inicia el temporizador
+        self.hide_recommendations()  # Ocultar los consejos
+
+    def switch_to_earthquake(self):
+        """Cambiar a la vista de simulación de terremoto."""
+        self.central_widget.setCurrentWidget(self.earthquake_view)
+        self.timer_label.hide()  # Ocultar el temporizador
+        self.timer_description.hide()  # Ocultar el texto adicional
+        self.stop_timer()  # Detener el temporizador
+        self.show_recommendations()  # Mostrar los consejos
+
+    def start_timer(self):
+        """Comienza el temporizador para la simulación."""
+        self.is_simulation_running = True
+        self.elapsed_time = 0  # Reinicia el temporizador
+        self.timer.start(1000)  # Actualiza cada segundo
+
+    def stop_timer(self):
+        """Detiene el temporizador."""
+        self.is_simulation_running = False
+        self.timer.stop()
 
     def create_left_sidebar(self):
         left_sidebar = QWidget()
@@ -51,11 +87,11 @@ class MainApp(QMainWindow):
         title_label.setStyleSheet("font-size: 28px; font-weight: bold; color: black;")
         sidebar_layout.addWidget(title_label)
 
-        recommendations_label = QLabel("Recomendaciones en caso de Sismo:")
-        recommendations_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 20px;")
-        sidebar_layout.addWidget(recommendations_label)
+        self.recommendations_label = QLabel("Recomendaciones en caso de Sismo:")
+        self.recommendations_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 20px;")
+        sidebar_layout.addWidget(self.recommendations_label)
 
-        recommendations_text = """
+        self.recommendations_text = """
         Recomendaciones proporcionadas por la Plataforma del Estado Peruano.
         
         ANTES DEL SISMO: 
@@ -85,9 +121,35 @@ class MainApp(QMainWindow):
         5. Si estás cerca al mar, aléjate de la zona hasta que se 
         descarte la posibilidad de un maremoto.
         """
-        recommendations_details = QLabel(recommendations_text)
-        recommendations_details.setStyleSheet("font-size: 16px; color: black;")
-        sidebar_layout.addWidget(recommendations_details)
+        self.recommendations_details = QLabel(self.recommendations_text)
+        self.recommendations_details.setStyleSheet("font-size: 16px; color: black;")
+        sidebar_layout.addWidget(self.recommendations_details)
+
+        # Temporizador en el lado izquierdo (solo visible cuando se cambia a simulación)
+        self.timer_label = QLabel("Tiempo: 0:00")
+        self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_label.setStyleSheet("font-size: 42px; font-weight: bold; color: black;")
+        sidebar_layout.addWidget(self.timer_label)
+
+        # Texto adicional debajo del temporizador
+        # Texto explicativo sobre la simulación
+        self.simulation_description = """
+        LOS CUADRADOS REPRESENTAN A LAS PERSONAS<br>
+        <img src="assets/safe_zone_sign.png" width="30" height="30"> CUBOS ROJOS: representan cuando la persona toma una decisión que lo pone en peligro<br><br>
+        <img src="assets/cubo_verde.png" width="30" height="30"> CUBOS VERDES: representa cuando la persona toma una decisión correcta para ponerse a salvo
+        """
+
+        # Crear el QLabel con el texto HTML
+        self.timer_description = QLabel(self.simulation_description)
+        self.timer_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_description.setStyleSheet("font-size: 14px; color: black; margin-top: 10px;")
+        self.timer_description.setVisible(False)  # Inicialmente oculto
+        sidebar_layout.addWidget(self.timer_description)
+
+
+        # Este texto se oculta al principio, se mostrará solo durante la simulación
+        self.timer_label.hide()
+        self.timer_description.hide()
 
         buttons_widget = QWidget()
         buttons_layout = QHBoxLayout()
@@ -121,14 +183,26 @@ class MainApp(QMainWindow):
 
         sidebar_layout.addWidget(buttons_widget)
         left_sidebar.setLayout(sidebar_layout)
-        left_sidebar.setMinimumWidth(250)
+        left_sidebar.setMinimumWidth(250)  # Mantener el mismo ancho para ambos modos
         left_sidebar.setStyleSheet("background-color: lightgray;")
+
+        left_sidebar.setFixedWidth(600)  # Establecer el ancho fijo de 400px para el sidebar
 
         self.media_player = QMediaPlayer()
         self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile("assets/sirena.wav")))
         self.is_sound_playing = False
 
         return left_sidebar
+
+    def show_recommendations(self):
+        """Mostrar los consejos de sismo."""
+        self.recommendations_label.show()
+        self.recommendations_details.show()
+
+    def hide_recommendations(self):
+        """Ocultar los consejos de sismo."""
+        self.recommendations_label.hide()
+        self.recommendations_details.hide()
 
     def toggle_sound(self):
         """Reproduce o detiene el sonido usando Pygame con el volumen ajustado."""
@@ -145,15 +219,11 @@ class MainApp(QMainWindow):
             pygame.mixer.music.play(-1)  
             print("Sonido encendido")
         self.is_sound_playing = not self.is_sound_playing
-    def switch_to_simulator(self):
-        self.central_widget.setCurrentWidget(self.simulator_view)
-        
-    def switch_to_earthquake(self):
-        self.central_widget.setCurrentWidget(self.earthquake_view)
 
-app = QApplication([]) 
 
-main_app = MainApp()
-main_app.show()
 
-app.exec()
+if __name__ == "__main__":
+    app = QApplication([])  # Inicializa la aplicación
+    main_app = MainApp()  # Instancia la ventana principal
+    main_app.show()  # Muestra la ventana
+    app.exec()  # Inicia el ciclo de eventos de la aplicación

@@ -1,5 +1,6 @@
 import random 
 import math
+
 class Person:
     def __init__(self, start_x, start_y):
         self.x = start_x + random.uniform(-0.1, 0.1)
@@ -7,8 +8,9 @@ class Person:
         self.speed = random.uniform(0.005, 0.015)
         self.safe_zone_reached = False
         self.target_safe_zone = None  
+        self.is_completely_safe = False  # Atributo que indica si está completamente a salvo
 
-    def move_towards_safe_zone(self, safe_zone_position, move_speed, safe_zone_occupied, others, target_radius=0.):
+    def move_towards_safe_zone(self, safe_zone_position, move_speed, safe_zone_occupied, others, target_radius=0.09):
         safe_x, safe_y = safe_zone_position
 
         # Si la zona está ocupada, no mover la persona
@@ -36,9 +38,10 @@ class Person:
         if distance_to_safe_zone <= target_radius:
             self.x = safe_x  # Mantener la persona dentro de la zona
             self.y = safe_y  # Ajuste de la posición para mantenerla en el radio
-            self.target_safe_zone = None  # Descartar la zona de destino, pero no marcar como alcanzada
+            self.target_safe_zone = None  # Descartar la zona de destino
 
-
+            # Marca a la persona como completamente a salvo
+            self.is_completely_safe = True  # Persona completamente a salvo al llegar a la zona segura
 
     def move_towards_stair(self, stair_position, move_speed, others):
         stair_x, stair_y = stair_position
@@ -52,9 +55,7 @@ class Person:
 
         self.avoid_collision(others)
 
-
     def avoid_collision(self, others):
-
         for other in others:
             if other is not self:
                 distance_x = self.x - other.x
@@ -66,16 +67,13 @@ class Person:
                     self.y += random.uniform(-0.01, 0.01)
 
     def reached_stair(self, stair_position):
-
         stair_x, stair_y = stair_position
         return abs(self.x - stair_x) <= 0.05 and abs(self.y - stair_y) <= 0.05
 
     def in_safe_zone(self):
-
         return self.safe_zone_reached
 
     def get_position(self):
-
         return self.x, self.y
 
     def update(self, safe_zones, stair_position, move_speed, safe_zone_occupied, others, safe_zone_count, safe_zone_limit):
@@ -86,3 +84,7 @@ class Person:
             self.move_towards_safe_zone(self.target_safe_zone, move_speed, safe_zone_occupied, others)
         else:
             self.move_towards_stair(stair_position, move_speed, others)
+
+    def is_safe(self):
+        """Devuelve True si la persona está completamente a salvo."""
+        return self.is_completely_safe

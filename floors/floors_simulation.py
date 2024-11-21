@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPainter, QFont
 import random
 import math
-
+import pygame
 from utils.texture import Texture
 from floors.person import Person
 
@@ -49,8 +49,13 @@ class FloorsSimulation(QOpenGLWidget):
         self.last_mouse_x = 0
         self.last_mouse_y = 0
         self.last_time = 0
+
+
+        pygame.init()
+        pygame.mixer.init()  # Asegúrate de inicializar el mezclador de sonidos de pygame
+        self.sound_safe = pygame.mixer.Sound("assets/safe_sound.wav")  # Aquí cargas el archivo de sonido adecuado
         glutInit()
-    
+
     def assign_safe_zone(self, person, floor_index):
 
         assigned = False
@@ -266,6 +271,9 @@ class FloorsSimulation(QOpenGLWidget):
         self.draw_textured_prism(stair_x, height + 0.02, stair_z, 0.1, self.stair_texture)  # Escalera
         glPopAttrib()  
 
+
+
+
     def render_people_3d(self, floor_index, height, delta_time):
         glPushAttrib(GL_ALL_ATTRIB_BITS)
 
@@ -285,9 +293,15 @@ class FloorsSimulation(QOpenGLWidget):
         safe_zone_radius = 0.8
         stair_radius = 0.2
 
+        # Manejo de personas en la zona segura
         for person_index, person in enumerate(safe_zone_people):
             if person.in_safe_zone():
-                continue
+                # Si ya está en la zona segura, marcarla como completamente a salvo
+                if not person.is_safe():
+                    person.is_completely_safe = True  # Cambia el estado de seguridad
+
+                    # Reproducir sonido si la persona está completamente a salvo
+                    self.sound_safe.play()
 
             target_zone_index = self.person_safe_zone[floor_index][person_index]
             target_zone_pos = self.safe_zone_positions[floor_index][target_zone_index]
@@ -306,13 +320,14 @@ class FloorsSimulation(QOpenGLWidget):
                 )
 
                 if person.in_safe_zone():
+                    # Reproducir sonido si la persona está completamente a salvo
+                    self.sound_safe.play()
                     safe_zone_occupied[target_zone_index] = True
 
-                color = (0.0, 1.0, 0.0, 1.0) if distance_to_zone <= safe_zone_radius else (1.0, 0.0, 0.0, 1.0)
+                # Si la persona está completamente a salvo, podemos usar otro color para diferenciarla
+                color = (0.0, 1.0, 0.0, 1.0) if person.is_safe() else (1.0, 0.0, 0.0, 1.0)
                 self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-                # Lógica de impresión: mostrar distancia al objetivo
-                self.show_text_3d(f"Dist: {distance_to_zone:.2f}", person.x, height + 0.1, person.y)
             else:
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
@@ -321,6 +336,7 @@ class FloorsSimulation(QOpenGLWidget):
                 )
                 self.draw_cube(person.x, height + 0.05, person.y, 0.04, (1.0, 0.0, 0.0, 1.0))
 
+        # Manejo de personas que se dirigen hacia las escaleras
         for person in stair_people:
             distance_to_stair = math.sqrt(
                 (person.x - self.stair_positions[floor_index][0]) ** 2 +
@@ -346,9 +362,7 @@ class FloorsSimulation(QOpenGLWidget):
             color = (0.0, 1.0, 0.0, 1.0) if distance_to_stair <= stair_radius else (1.0, 0.0, 0.0, 1.0)
             self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-            # Lógica de impresión: mostrar distancia a la escalera
-            self.show_text_3d(f"Dist: {distance_to_stair:.2f}", person.x, height + 0.1, person.y)
-
+        
         # Solo eliminar a las personas que realmente llegaron a las escaleras
         for person in to_remove:
             self.floors[floor_index].remove(person)
@@ -356,19 +370,6 @@ class FloorsSimulation(QOpenGLWidget):
         glPopAttrib()
 
 
-    def show_text_3d(self, text, x, y, z):
-        glPushMatrix()
-        glLoadIdentity()
-        glOrtho(-10, 10, -10, 10, -10, 10)  # Asegurar un rango adecuado para 3D y texto
-        glRasterPos3f(x, y, z)
-
-        painter = QPainter(self)
-        painter.begin(self)
-        painter.setFont(QFont("Helvetica", 12))
-        painter.drawText(int(x * 50), int(y * 50), text)
-        painter.end()
-
-        glPopMatrix()
 
 
     def mouseMoveEvent(self, event):
