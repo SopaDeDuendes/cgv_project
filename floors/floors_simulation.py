@@ -2,7 +2,7 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PyQt5.QtWidgets import QOpenGLWidget
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainter, QFont
 import random
 import math
@@ -11,6 +11,7 @@ from utils.texture import Texture
 from floors.person import Person
 
 class FloorsSimulation(QOpenGLWidget):
+    signal_all_safe = pyqtSignal(bool)
     def __init__(self):
         super().__init__()
         self.timer = QTimer(self)
@@ -272,8 +273,7 @@ class FloorsSimulation(QOpenGLWidget):
         glPopAttrib()  
 
 
-
-
+    # Dentro de render_people_3d
     def render_people_3d(self, floor_index, height, delta_time):
         glPushAttrib(GL_ALL_ATTRIB_BITS)
 
@@ -299,17 +299,13 @@ class FloorsSimulation(QOpenGLWidget):
                 # Si ya está en la zona segura, marcarla como completamente a salvo
                 if not person.is_safe():
                     person.is_completely_safe = True  # Cambia el estado de seguridad
-
-                    # Reproducir sonido si la persona está completamente a salvo
-                    self.sound_safe.play()
+                    self.sound_safe.play()  # Reproducir sonido
 
             target_zone_index = self.person_safe_zone[floor_index][person_index]
             target_zone_pos = self.safe_zone_positions[floor_index][target_zone_index]
 
             target_zone_pos_x = target_zone_pos[0] + random.uniform(-safe_zone_radius, safe_zone_radius)
             target_zone_pos_y = target_zone_pos[1] + random.uniform(-safe_zone_radius, safe_zone_radius)
-
-            distance_to_zone = math.sqrt((person.x - target_zone_pos[0]) ** 2 + (person.y - target_zone_pos[1]) ** 2)
 
             if not safe_zone_occupied[target_zone_index]:
                 person.move_towards_safe_zone(
@@ -320,11 +316,8 @@ class FloorsSimulation(QOpenGLWidget):
                 )
 
                 if person.in_safe_zone():
-                    # Reproducir sonido si la persona está completamente a salvo
-                    self.sound_safe.play()
                     safe_zone_occupied[target_zone_index] = True
 
-                # Si la persona está completamente a salvo, podemos usar otro color para diferenciarla
                 color = (0.0, 1.0, 0.0, 1.0) if person.is_safe() else (1.0, 0.0, 0.0, 1.0)
                 self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
@@ -338,11 +331,6 @@ class FloorsSimulation(QOpenGLWidget):
 
         # Manejo de personas que se dirigen hacia las escaleras
         for person in stair_people:
-            distance_to_stair = math.sqrt(
-                (person.x - self.stair_positions[floor_index][0]) ** 2 +
-                (person.y - self.stair_positions[floor_index][1]) ** 2
-            )
-
             if not person.in_safe_zone():
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
@@ -359,17 +347,29 @@ class FloorsSimulation(QOpenGLWidget):
                         self.person_safe_zone[floor_index].pop(0)
                     )
 
-            color = (0.0, 1.0, 0.0, 1.0) if distance_to_stair <= stair_radius else (1.0, 0.0, 0.0, 1.0)
+            color = (0.0, 1.0, 0.0, 1.0) if person.is_safe() else (1.0, 0.0, 0.0, 1.0)
             self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-        
         # Solo eliminar a las personas que realmente llegaron a las escaleras
         for person in to_remove:
             self.floors[floor_index].remove(person)
 
+        # *** Lógica añadida: Verificar si todos están seguros en el último piso ***
+        if floor_index == 0 and len(self.floors[floor_index]) > 0:
+            all_safe = all(person.is_completely_safe for person in self.floors[floor_index])
+            if all_safe:
+                self.check_safety()  # Enviar señal de seguridad
+
         glPopAttrib()
 
-
+    # Modificación en check_safety
+    def check_safety(self):
+        """
+        Método que verifica si todos están seguros.
+        Emitirá el signal con `True` una sola vez.
+        """
+        self.signal_all_safe.emit(True)
+        print("Todos están a salvo. Señal emitida.")  # Depuración
 
 
     def mouseMoveEvent(self, event):

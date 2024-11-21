@@ -43,6 +43,11 @@ class MainApp(QMainWindow):
         self.elapsed_time = 0
         self.is_simulation_running = False
 
+        # Conectar señal del simulador
+        self.connect_signal_from_simulator()
+        self.initialize_sound()
+
+
     def update_timer(self):
         """Actualizar el temporizador."""
         if self.is_simulation_running:
@@ -50,13 +55,15 @@ class MainApp(QMainWindow):
             minutes = self.elapsed_time // 60
             seconds = self.elapsed_time % 60
             self.timer_label.setText(f"Tiempo: {minutes}:{seconds:02d}")
+            print(f"Tiempo actualizado: {minutes}:{seconds:02d}")  # Debugging
 
     def switch_to_simulator(self):
         """Cambiar a la vista de simulación de edificios."""
         self.central_widget.setCurrentWidget(self.simulator_view)
         self.timer_label.show()  # Mostrar el temporizador
         self.timer_description.show()  # Mostrar el texto adicional
-        self.start_timer()  # Inicia el temporizador
+        if not self.is_simulation_running:  # Verificar si el temporizador no está activo
+            self.start_timer()  # Inicia el temporizador si no está corriendo
         self.hide_recommendations()  # Ocultar los consejos
 
     def switch_to_earthquake(self):
@@ -64,19 +71,29 @@ class MainApp(QMainWindow):
         self.central_widget.setCurrentWidget(self.earthquake_view)
         self.timer_label.hide()  # Ocultar el temporizador
         self.timer_description.hide()  # Ocultar el texto adicional
-        self.stop_timer()  # Detener el temporizador
         self.show_recommendations()  # Mostrar los consejos
 
     def start_timer(self):
         """Comienza el temporizador para la simulación."""
-        self.is_simulation_running = True
-        self.elapsed_time = 0  # Reinicia el temporizador
-        self.timer.start(1000)  # Actualiza cada segundo
+        if not self.is_simulation_running:
+            self.is_simulation_running = True
+            self.timer.start(1000)  # Actualiza cada segundo
+            print("Temporizador iniciado.")  # Debugging
 
     def stop_timer(self):
         """Detiene el temporizador."""
         self.is_simulation_running = False
         self.timer.stop()
+
+    def connect_signal_from_simulator(self):
+        """Conecta el signal del simulador para detener el temporizador."""
+        self.simulator_view.signal_all_safe.connect(self.handle_all_safe_signal)
+
+    def handle_all_safe_signal(self, all_safe):
+        """Maneja el signal que indica que todos están seguros."""
+        if all_safe:
+            print("Todos están seguros, deteniendo el temporizador.")
+            self.stop_timer()
 
     def create_left_sidebar(self):
         left_sidebar = QWidget()
@@ -176,11 +193,13 @@ class MainApp(QMainWindow):
 
         right_buttons_widget = QWidget()
         right_buttons_layout = QVBoxLayout()
-        sound_button = QPushButton()
-        sound_button.setIcon(QIcon("assets/sound_icon.png"))  
-        sound_button.setIconSize(QSize(50, 50))  
-        sound_button.clicked.connect(self.toggle_sound) 
-        right_buttons_layout.addWidget(sound_button)
+        self.sound_button = QPushButton()
+        self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  # Ícono inicial (sonido activado)
+        self.sound_button.setIconSize(QSize(50, 50))
+        self.sound_button.clicked.connect(self.toggle_sound)
+        self.sound_button.setStyleSheet("border: none; background: transparent;")
+
+        right_buttons_layout.addWidget(self.sound_button)
 
         right_buttons_widget.setLayout(right_buttons_layout)
 
@@ -201,6 +220,36 @@ class MainApp(QMainWindow):
         self.is_sound_playing = False
 
         return left_sidebar
+    def initialize_sound(self):
+        """Inicia el sistema de sonido al cargar la ventana."""
+        if not hasattr(self, 'pygame_initialized'):
+            pygame.mixer.init()
+            self.pygame_initialized = True
+
+        pygame.mixer.music.load("assets/sirena.wav")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)  # Loop infinito
+        self.is_sound_playing = True
+        print("Sonido inicial activado")
+
+    def toggle_sound(self):
+        """Alterna entre reproducir y detener el sonido, actualizando el ícono del botón."""
+        if not hasattr(self, 'pygame_initialized'):
+            pygame.mixer.init()
+            self.pygame_initialized = True
+
+        if self.is_sound_playing:
+            pygame.mixer.music.stop()
+            self.sound_button.setIcon(QIcon("assets/sound_off_icon.png"))  # Cambiar a ícono de sonido apagado
+            print("Sonido apagado")
+        else:
+            pygame.mixer.music.play(-1)
+            self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  # Cambiar a ícono de sonido encendido
+            print("Sonido encendido")
+
+        self.is_sound_playing = not self.is_sound_playing
+
+
 
     def show_recommendations(self):
         """Mostrar los consejos de sismo."""
@@ -211,22 +260,6 @@ class MainApp(QMainWindow):
         """Ocultar los consejos de sismo."""
         self.recommendations_label.hide()
         self.recommendations_details.hide()
-
-    def toggle_sound(self):
-        """Reproduce o detiene el sonido usando Pygame con el volumen ajustado."""
-        if not hasattr(self, 'pygame_initialized'):
-            pygame.mixer.init()
-            self.pygame_initialized = True
-
-        if self.is_sound_playing:
-            pygame.mixer.music.stop()
-            print("Sonido apagado")
-        else:
-            pygame.mixer.music.load("assets/sirena.wav")    
-            pygame.mixer.music.set_volume(0.5)  
-            pygame.mixer.music.play(-1)  
-            print("Sonido encendido")
-        self.is_sound_playing = not self.is_sound_playing
 
 
 
