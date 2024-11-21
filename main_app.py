@@ -62,7 +62,20 @@ class MainApp(QMainWindow):
             minutes = self.elapsed_time // 60
             seconds = self.elapsed_time % 60
             self.timer_label.setText(f"Tiempo: {minutes}:{seconds:02d}")
-            print(f"Tiempo actualizado: {minutes}:{seconds:02d}")  # Debugging
+            if self.elapsed_time == 51:
+                self.stop_timer()
+                self.play_congratulations_sound()
+
+    def play_congratulations_sound(self):
+        """Reproduce el efecto de sonido de felicitaciones."""
+        if not hasattr(self, 'pygame_initialized'):
+            pygame.mixer.init()
+            self.pygame_initialized = True
+
+        pygame.mixer.music.stop()  # Detener cualquier sonido en reproducción
+        pygame.mixer.Sound("assets/congratulations.wav").play()  # Reproducir el sonido
+        print("Efecto de sonido de felicitaciones reproducido.")
+
 
     def switch_to_simulator(self):
         """Cambiar a la vista de simulación de edificios."""
