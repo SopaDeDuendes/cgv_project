@@ -9,13 +9,22 @@ class CustomButton(QPushButton):
         super().__init__(text, parent)
 
         self.setStyleSheet("""
-            CustomButton {
-                background-color: white;
+            QPushButton {
+                background-color: #4CAF50;  /* Verde base */
+                color: white;  /* Texto blanco */
                 border: none;
                 border-radius: 10px;
-                color: black;
-                font-size: 16px;
                 padding: 10px;
+                font-weight: bold;
+                min-height: 40px;
+            }
+            QPushButton:hover {
+                background-color: #66BB6A;  /* Verde más claro para hover */
+                color: white;
+            }
+            QPushButton:pressed {
+                background-color: #388E3C;  /* Verde más oscuro para estado presionado */
+                color: white;
             }
         """)
 
@@ -31,3 +40,4 @@ class CustomButton(QPushButton):
     def set_expanding(self):
         """ Hacer que el botón se expanda en su layout """
         self.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
+

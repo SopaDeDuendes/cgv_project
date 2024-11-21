@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QApplication 
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QGuiApplication
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl,QTimer
 from utils.custom_button import CustomButton
@@ -34,7 +34,6 @@ class MainApp(QMainWindow):
         self.timer_label.show()
         self.timer_description.show()
 
-
         main_layout.addWidget(self.central_widget)
 
         container = QWidget()
@@ -48,13 +47,15 @@ class MainApp(QMainWindow):
         self.timer.timeout.connect(self.update_timer)
         self.elapsed_time = 0
         self.is_simulation_running = False
+        self.is_timer_stopped = False
 
         self.switch_to_simulator()
-        # Conectar señal del simulador
-        self.connect_signal_from_simulator()
+
         self.initialize_sound()
 
-
+        # Aquí obtienes la instancia correcta de FloorsSimulation
+        self.simulator_view.signal_all_safe.connect(self.on_all_safe)
+            
     def update_timer(self):
         """Actualizar el temporizador."""
         if self.is_simulation_running:
@@ -62,9 +63,53 @@ class MainApp(QMainWindow):
             minutes = self.elapsed_time // 60
             seconds = self.elapsed_time % 60
             self.timer_label.setText(f"Tiempo: {minutes}:{seconds:02d}")
-            if self.elapsed_time == 51:
+
+            # Detener el temporizador al llegar a los 52 segundos
+            if self.elapsed_time == 50:
                 self.stop_timer()
                 self.play_congratulations_sound()
+                self.show_congratulations_window()
+
+    def show_congratulations_window(self):
+        """Muestra una ventana emergente personalizada con el mensaje de felicitaciones."""
+        # Crear una nueva ventana
+        self.congratulations_window = QMainWindow(self)
+        self.congratulations_window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.congratulations_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # Configurar el contenido de la ventana
+        central_widget = QWidget(self.congratulations_window)
+        layout = QVBoxLayout(central_widget)
+
+        # Mensaje de felicitaciones
+        congratulations_label = QLabel("¡FELICITACIONES!\nTODOS ESTÁN A SALVO")
+        congratulations_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        congratulations_label.setStyleSheet("""
+            font-size: 64px;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(0, 128, 0, 0.8); /* Verde semi-transparente */
+            padding: 20px;
+            border-radius: 20px;
+        """)
+        layout.addWidget(congratulations_label)
+
+        # Configurar tamaño y centrado
+        self.congratulations_window.setCentralWidget(central_widget)
+        self.congratulations_window.resize(800, 400)
+        screen = QGuiApplication.primaryScreen().geometry()
+        x = (screen.width() - self.congratulations_window.width()) // 2
+        y = (screen.height() - self.congratulations_window.height()) // 2
+        self.congratulations_window.move(x, y)
+
+        # Mostrar la ventana
+        self.congratulations_window.show()
+
+    def on_all_safe(self, all_safe):
+        """Reproducir sonido cuando todos están seguros."""
+        if all_safe:
+            self.stop_timer()
+            self.play_congratulations_sound()
 
     def play_congratulations_sound(self):
         """Reproduce el efecto de sonido de felicitaciones."""
@@ -76,14 +121,16 @@ class MainApp(QMainWindow):
         pygame.mixer.Sound("assets/congratulations.wav").play()  # Reproducir el sonido
         print("Efecto de sonido de felicitaciones reproducido.")
 
-
     def switch_to_simulator(self):
         """Cambiar a la vista de simulación de edificios."""
         self.central_widget.setCurrentWidget(self.simulator_view)
         self.timer_label.show()  # Mostrar el temporizador
         self.timer_description.show()  # Mostrar el texto adicional
-        if not self.is_simulation_running:  # Verificar si el temporizador no está activo
-            self.start_timer()  # Inicia el temporizador si no está corriendo
+
+        # Inicia el temporizador solo si no ha sido detenido manualmente
+        if not self.is_simulation_running and not self.is_timer_stopped:
+            self.start_timer()
+
         self.hide_recommendations()  # Ocultar los consejos
 
     def switch_to_earthquake(self):
@@ -93,41 +140,37 @@ class MainApp(QMainWindow):
         self.timer_description.hide()  # Ocultar el texto adicional
         self.show_recommendations()  # Mostrar los consejos
 
+        # Cerrar la ventana de felicitaciones si está abierta
+        if hasattr(self, 'congratulations_window') and self.congratulations_window is not None:
+            self.congratulations_window.close()
+            self.congratulations_window = None  # Eliminar la referencia para liberar memoria
+
+
+
     def start_timer(self):
         """Comienza el temporizador para la simulación."""
         if not self.is_simulation_running:
             self.is_simulation_running = True
+            self.is_timer_stopped = False  # Reinicia el estado de "detenido manualmente"
             self.timer.start(1000)  # Actualiza cada segundo
             print("Temporizador iniciado.")  # Debugging
 
     def stop_timer(self):
         """Detiene el temporizador."""
         self.is_simulation_running = False
+        self.is_timer_stopped = True  # Marca el temporizador como detenido manualmente
         self.timer.stop()
+        print(f"Temporizador detenido en {self.elapsed_time} segundos.")  # Debugging
 
-    def connect_signal_from_simulator(self):
-        """Conecta el signal del simulador para detener el temporizador."""
-        self.simulator_view.signal_all_safe.connect(self.handle_all_safe_signal)
-
-    def handle_all_safe_signal(self, all_safe):
-        """Maneja el signal que indica que todos están seguros."""
-        if all_safe:
-            print("Todos están seguros, deteniendo el temporizador.")
-            self.stop_timer()
 
     def create_left_sidebar(self):
         left_sidebar = QWidget()
         sidebar_layout = QVBoxLayout()
 
-        title_label = QLabel("Simulador de Sismo")
+        title_label = QLabel("Simulador de Sismo <br> (Vista de Edificio con Rayos-X)")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-size: 28px; font-weight: bold; color: black;")
         sidebar_layout.addWidget(title_label)
-
-        self.recommendations_label = QLabel("Recomendaciones en caso de Sismo:")
-        self.recommendations_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 20px;")
-        sidebar_layout.addWidget(self.recommendations_label)
-
         self.recommendations_text = """
         Recomendaciones proporcionadas por la Plataforma del Estado Peruano.
         
@@ -173,15 +216,15 @@ class MainApp(QMainWindow):
         self.simulation_description = """
         <b>LOS CUBOS REPRESENTAN PERSONAS EVACUANDO</b> <br><br><br>
         
-        🟥 = representan cuando la persona toma 
-        una decisión que lo pone en peligro <br>
-        🟩 =  representa cuando la persona toma 
-        una decisión correcta para ponerse a salvo <br><br>
+        🟥 = Personas que toman una decisión que los <br>
+        pone en peligro<br><br>
+        🟩 =  Personas que toman la decisión de ponerse<br>
+        a salvo, al lado de columnas o buscando las escaleras<br><br>
         
-        <img src="assets/stair_sign.png" width="40" height="40">  = Esta señal representa donde se encuentran las escaleras a la salida <br>
+        <img src="assets/stair_sign.png" width="40" height="40">  = Señal de Salida a utilizar en caso de emergencias <br>
 
 
-        <img src="assets/safe_zone_sign.png" width="40" height="40"> = Esta señal indica los pilares que son resistentes en situaciones de sismos <br>
+        <img src="assets/safe_zone_sign.png" width="40" height="40"> = Señal que indica una Zona segura en caso de sismos <br>
         """
 
         # Crear el QLabel con el texto HTML
@@ -193,7 +236,6 @@ class MainApp(QMainWindow):
 
 
         # Este texto se oculta al principio, se mostrará solo durante la simulación
-        self.recommendations_label.hide()
         self.recommendations_details.hide()
 
         buttons_widget = QWidget()
@@ -233,7 +275,9 @@ class MainApp(QMainWindow):
         left_sidebar.setMinimumWidth(250)  # Mantener el mismo ancho para ambos modos
         left_sidebar.setStyleSheet("background-color: lightgray;")
 
-        left_sidebar.setFixedWidth(600)  # Establecer el ancho fijo de 400px para el sidebar
+        left_sidebar.setFixedWidth(600)  
+        left_sidebar.setFixedHeight(1030)  
+
 
         self.media_player = QMediaPlayer()
         self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile("assets/sirena.wav")))
@@ -273,12 +317,11 @@ class MainApp(QMainWindow):
 
     def show_recommendations(self):
         """Mostrar los consejos de sismo."""
-        self.recommendations_label.show()
         self.recommendations_details.show()
 
     def hide_recommendations(self):
         """Ocultar los consejos de sismo."""
-        self.recommendations_label.hide()
+
         self.recommendations_details.hide()
 
 

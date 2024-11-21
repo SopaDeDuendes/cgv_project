@@ -295,6 +295,7 @@ class FloorsSimulation(QOpenGLWidget):
 
         for person_index, person in enumerate(safe_zone_people):
             if person.in_safe_zone():
+                
                 continue
 
             target_zone_index = self.person_safe_zone[floor_index][person_index]
@@ -361,6 +362,11 @@ class FloorsSimulation(QOpenGLWidget):
 
         glPopAttrib()
 
+    def check_all_safe(self):
+        all_safe = all(person.is_completely_safe for floor in self.floors for person in floor)
+        if all_safe:
+            print("¡Todos están seguros!")
+            self.signal_all_safe.emit(True)  # Señal para notificar que todos están seguros
 
 
     # Modificación en check_safety
