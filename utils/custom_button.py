@@ -10,8 +10,8 @@ class CustomButton(QPushButton):
 
         self.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50;  /* Verde base */
-                color: white;  /* Texto blanco */
+                background-color: #4CAF50;  
+                color: white;  
                 border: none;
                 border-radius: 10px;
                 padding: 10px;
@@ -19,11 +19,11 @@ class CustomButton(QPushButton):
                 min-height: 40px;
             }
             QPushButton:hover {
-                background-color: #66BB6A;  /* Verde más claro para hover */
+                background-color: #66BB6A;  
                 color: white;
             }
             QPushButton:pressed {
-                background-color: #388E3C;  /* Verde más oscuro para estado presionado */
+                background-color: #388E3C;  
                 color: white;
             }
         """)

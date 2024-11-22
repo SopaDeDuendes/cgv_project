@@ -53,48 +53,40 @@ class MainApp(QMainWindow):
 
         self.initialize_sound()
 
-        # Aquí obtienes la instancia correcta de FloorsSimulation
         self.simulator_view.signal_all_safe.connect(self.on_all_safe)
             
     def update_timer(self):
-        """Actualizar el temporizador."""
         if self.is_simulation_running:
             self.elapsed_time += 1
             minutes = self.elapsed_time // 60
             seconds = self.elapsed_time % 60
             self.timer_label.setText(f"Tiempo: {minutes}:{seconds:02d}")
 
-            # Detener el temporizador al llegar a los 52 segundos
-            if self.elapsed_time == 50:
+            if self.elapsed_time == 51:
                 self.stop_timer()
                 self.play_congratulations_sound()
                 self.show_congratulations_window()
 
     def show_congratulations_window(self):
-        """Muestra una ventana emergente personalizada con el mensaje de felicitaciones."""
-        # Crear una nueva ventana
         self.congratulations_window = QMainWindow(self)
         self.congratulations_window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.congratulations_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        # Configurar el contenido de la ventana
         central_widget = QWidget(self.congratulations_window)
         layout = QVBoxLayout(central_widget)
 
-        # Mensaje de felicitaciones
         congratulations_label = QLabel("¡FELICITACIONES!\nTODOS ESTÁN A SALVO")
         congratulations_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         congratulations_label.setStyleSheet("""
             font-size: 64px;
             font-weight: bold;
             color: white;
-            background-color: rgba(0, 128, 0, 0.8); /* Verde semi-transparente */
+            background-color: rgba(0, 128, 0, 0.8); 
             padding: 20px;
             border-radius: 20px;
         """)
         layout.addWidget(congratulations_label)
 
-        # Configurar tamaño y centrado
         self.congratulations_window.setCentralWidget(central_widget)
         self.congratulations_window.resize(800, 400)
         screen = QGuiApplication.primaryScreen().geometry()
@@ -102,66 +94,56 @@ class MainApp(QMainWindow):
         y = (screen.height() - self.congratulations_window.height()) // 2
         self.congratulations_window.move(x, y)
 
-        # Mostrar la ventana
         self.congratulations_window.show()
 
     def on_all_safe(self, all_safe):
-        """Reproducir sonido cuando todos están seguros."""
         if all_safe:
             self.stop_timer()
             self.play_congratulations_sound()
 
     def play_congratulations_sound(self):
-        """Reproduce el efecto de sonido de felicitaciones."""
         if not hasattr(self, 'pygame_initialized'):
             pygame.mixer.init()
             self.pygame_initialized = True
 
-        pygame.mixer.music.stop()  # Detener cualquier sonido en reproducción
-        pygame.mixer.Sound("assets/congratulations.wav").play()  # Reproducir el sonido
+        pygame.mixer.music.stop()  
+        pygame.mixer.Sound("assets/congratulations.wav").play()  
         print("Efecto de sonido de felicitaciones reproducido.")
 
     def switch_to_simulator(self):
         """Cambiar a la vista de simulación de edificios."""
         self.central_widget.setCurrentWidget(self.simulator_view)
-        self.timer_label.show()  # Mostrar el temporizador
-        self.timer_description.show()  # Mostrar el texto adicional
+        self.timer_label.show()  
+        self.timer_description.show() 
 
-        # Inicia el temporizador solo si no ha sido detenido manualmente
+
         if not self.is_simulation_running and not self.is_timer_stopped:
             self.start_timer()
 
-        self.hide_recommendations()  # Ocultar los consejos
+        self.hide_recommendations()  
 
     def switch_to_earthquake(self):
         """Cambiar a la vista de simulación de terremoto."""
         self.central_widget.setCurrentWidget(self.earthquake_view)
-        self.timer_label.hide()  # Ocultar el temporizador
-        self.timer_description.hide()  # Ocultar el texto adicional
-        self.show_recommendations()  # Mostrar los consejos
+        self.timer_label.hide() 
+        self.timer_description.hide()  
+        self.show_recommendations()
 
-        # Cerrar la ventana de felicitaciones si está abierta
         if hasattr(self, 'congratulations_window') and self.congratulations_window is not None:
             self.congratulations_window.close()
-            self.congratulations_window = None  # Eliminar la referencia para liberar memoria
-
-
+            self.congratulations_window = None  
 
     def start_timer(self):
-        """Comienza el temporizador para la simulación."""
         if not self.is_simulation_running:
             self.is_simulation_running = True
-            self.is_timer_stopped = False  # Reinicia el estado de "detenido manualmente"
-            self.timer.start(1000)  # Actualiza cada segundo
-            print("Temporizador iniciado.")  # Debugging
+            self.is_timer_stopped = False  
+            self.timer.start(1000)  
 
     def stop_timer(self):
         """Detiene el temporizador."""
         self.is_simulation_running = False
-        self.is_timer_stopped = True  # Marca el temporizador como detenido manualmente
+        self.is_timer_stopped = True  
         self.timer.stop()
-        print(f"Temporizador detenido en {self.elapsed_time} segundos.")  # Debugging
-
 
     def create_left_sidebar(self):
         left_sidebar = QWidget()
@@ -174,7 +156,7 @@ class MainApp(QMainWindow):
         self.recommendations_text = """
         Recomendaciones proporcionadas por la Plataforma del Estado Peruano.
         
-        ANTES DEL SISMO: 
+        <b>ANTES DEL SISMO:</b>
 
         1. Ubica las zonas seguras y estructuras firmes para protegerte.
         2. Ten preparada una mochila de emergencia.
@@ -182,7 +164,7 @@ class MainApp(QMainWindow):
         4. Educa a los niños de tu casa sobre medidas de precaución.
         5. Contrata un ingeniero para reforzar tu vivienda.
 
-        DURANTE EL SISMO: 
+        <b>DURANTE EL SISMO:</b>
 
         1. Aléjate de las ventanas y objetos que pueden caerse.
         2. Si no llegas rápido a la salida, busca un espacio seguro.
@@ -190,7 +172,7 @@ class MainApp(QMainWindow):
         así que mejor envía mensajes de texto.
         4. No uses ascensor.
 
-        DESPUES DEL SISMO: 
+        <b>DESPUES DEL SISMO:</b>
 
         1. Revisa si hay fugas de gas que podrían causar fuego.
         2. Llamar a los números de emergencia como: los bomberos 116, 
@@ -205,37 +187,32 @@ class MainApp(QMainWindow):
         self.recommendations_details.setStyleSheet("font-size: 16px; color: black;")
         sidebar_layout.addWidget(self.recommendations_details)
 
-        # Temporizador en el lado izquierdo (solo visible cuando se cambia a simulación)
         self.timer_label = QLabel("Tiempo: 0:00")
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.timer_label.setStyleSheet("font-size: 42px; font-weight: bold; color: black;")
         sidebar_layout.addWidget(self.timer_label)
 
-        # Texto adicional debajo del temporizador
-        # Texto explicativo sobre la simulación
+
         self.simulation_description = """
         <b>LOS CUBOS REPRESENTAN PERSONAS EVACUANDO</b> <br><br><br>
         
-        🟥 = Personas que toman una decisión que los <br>
-        pone en peligro<br><br>
+        🟥 = Personas que toman una decisión que los pone en peligro<br><br>
         🟩 =  Personas que toman la decisión de ponerse<br>
         a salvo, al lado de columnas o buscando las escaleras<br><br>
         
         <img src="assets/stair_sign.png" width="40" height="40">  = Señal de Salida a utilizar en caso de emergencias <br>
-
-
         <img src="assets/safe_zone_sign.png" width="40" height="40"> = Señal que indica una Zona segura en caso de sismos <br>
+        <img src="assets/exit_sign.png" width="40" height="40"> = Señal que marca la salida <br>
+
         """
 
-        # Crear el QLabel con el texto HTML
         self.timer_description = QLabel(self.simulation_description)
         self.timer_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.timer_description.setStyleSheet("font-size: 14px; color: black; margin-top: 10px;")
-        self.timer_description.setVisible(False)  # Inicialmente oculto
+        self.timer_description.setVisible(False)  
         sidebar_layout.addWidget(self.timer_description)
 
 
-        # Este texto se oculta al principio, se mostrará solo durante la simulación
         self.recommendations_details.hide()
 
         buttons_widget = QWidget()
@@ -256,7 +233,7 @@ class MainApp(QMainWindow):
         right_buttons_widget = QWidget()
         right_buttons_layout = QVBoxLayout()
         self.sound_button = QPushButton()
-        self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  # Ícono inicial (sonido activado)
+        self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  
         self.sound_button.setIconSize(QSize(50, 50))
         self.sound_button.clicked.connect(self.toggle_sound)
         self.sound_button.setStyleSheet("border: none; background: transparent;")
@@ -272,7 +249,7 @@ class MainApp(QMainWindow):
 
         sidebar_layout.addWidget(buttons_widget)
         left_sidebar.setLayout(sidebar_layout)
-        left_sidebar.setMinimumWidth(250)  # Mantener el mismo ancho para ambos modos
+        left_sidebar.setMinimumWidth(250) 
         left_sidebar.setStyleSheet("background-color: lightgray;")
 
         left_sidebar.setFixedWidth(600)  
@@ -285,30 +262,28 @@ class MainApp(QMainWindow):
 
         return left_sidebar
     def initialize_sound(self):
-        """Inicia el sistema de sonido al cargar la ventana."""
         if not hasattr(self, 'pygame_initialized'):
             pygame.mixer.init()
             self.pygame_initialized = True
 
         pygame.mixer.music.load("assets/sirena.wav")
         pygame.mixer.music.set_volume(0.5)
-        pygame.mixer.music.play(-1)  # Loop infinito
+        pygame.mixer.music.play(-1) 
         self.is_sound_playing = True
         print("Sonido inicial activado")
 
     def toggle_sound(self):
-        """Alterna entre reproducir y detener el sonido, actualizando el ícono del botón."""
         if not hasattr(self, 'pygame_initialized'):
             pygame.mixer.init()
             self.pygame_initialized = True
 
         if self.is_sound_playing:
             pygame.mixer.music.stop()
-            self.sound_button.setIcon(QIcon("assets/sound_off_icon.png"))  # Cambiar a ícono de sonido apagado
+            self.sound_button.setIcon(QIcon("assets/sound_off_icon.png"))  
             print("Sonido apagado")
         else:
             pygame.mixer.music.play(-1)
-            self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  # Cambiar a ícono de sonido encendido
+            self.sound_button.setIcon(QIcon("assets/sound_on_icon.png"))  
             print("Sonido encendido")
 
         self.is_sound_playing = not self.is_sound_playing
@@ -324,10 +299,8 @@ class MainApp(QMainWindow):
 
         self.recommendations_details.hide()
 
-
-
 if __name__ == "__main__":
-    app = QApplication([])  # Inicializa la aplicación
-    main_app = MainApp()  # Instancia la ventana principal
-    main_app.show()  # Muestra la ventana
-    app.exec()  # Inicia el ciclo de eventos de la aplicación
+    app = QApplication([]) 
+    main_app = MainApp()  
+    main_app.show()  
+    app.exec() 

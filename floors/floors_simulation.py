@@ -81,6 +81,7 @@ class FloorsSimulation(QOpenGLWidget):
         self.safe_zone_texture = Texture("assets/safe_zone_sign.png")
         self.stair_texture = Texture("assets/stair_sign.png")
         self.floor_texture = Texture("assets/floor.jpg")
+        self.exit_texture = Texture("assets/exit_sign.png")
 
 
 
@@ -183,25 +184,26 @@ class FloorsSimulation(QOpenGLWidget):
         glPopMatrix()
 
     def render_floor_3d(self, floor_index, height):
+        glPushAttrib(GL_ALL_ATTRIB_BITS)
 
-        glPushAttrib(GL_ALL_ATTRIB_BITS)  
+        # Desplazamiento constante en el eje Y
+        y_offset = -0.5  # Ajusta este valor según la cantidad de desplazamiento que necesites
+        height += y_offset
 
         tremor_amplitude = 0.005
         tremor_frequency = 4
         tremor_offset = tremor_amplitude * math.sin(glutGet(GLUT_ELAPSED_TIME) * tremor_frequency)
 
-        height += tremor_offset 
+        height += tremor_offset  # Suma la vibración al desplazamiento base
 
-        glColor3f(1.0, 1.0, 1.0)  
+        glColor3f(1.0, 1.0, 1.0)
         glEnable(GL_TEXTURE_2D)
         glBindTexture(GL_TEXTURE_2D, self.floor_texture.texture_id)
 
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, self.floor_texture.texture_id) 
-
         floor_size = 0.8
-        wall_thickness = 0.025 
+        wall_thickness = 0.025
 
+        # Piso principal
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-floor_size, height, -floor_size)
@@ -213,6 +215,7 @@ class FloorsSimulation(QOpenGLWidget):
         glVertex3f(-floor_size, height, floor_size)
         glEnd()
 
+        # Piso superior
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-floor_size, height + wall_thickness, -floor_size)
@@ -224,6 +227,7 @@ class FloorsSimulation(QOpenGLWidget):
         glVertex3f(-floor_size, height + wall_thickness, floor_size)
         glEnd()
 
+        # Paredes
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-floor_size, height, -floor_size)
@@ -264,18 +268,28 @@ class FloorsSimulation(QOpenGLWidget):
 
         glDisable(GL_TEXTURE_2D)
 
+        # Renderizar zonas seguras
         for safe_zone in self.safe_zone_positions[floor_index]:
             safe_x, safe_z = safe_zone
-            self.draw_textured_prism(safe_x, height + 0.02, safe_z, 0.1, self.safe_zone_texture)  # Zona segura
+            self.draw_textured_prism(safe_x, height + 0.02, safe_z, 0.1, self.safe_zone_texture)
 
+        # Renderizar escaleras
         stair_x, stair_z = self.stair_positions[floor_index]
-        self.draw_textured_prism(stair_x, height + 0.02, stair_z, 0.1, self.stair_texture)  # Escalera
-        glPopAttrib()  
+        
+
+        # Renderizar puerta de salida solo en el piso 0
+        if floor_index == 0:
+            self.draw_textured_prism(stair_x, height + 0.02, stair_z, 0.1, self.exit_texture)
+        self.draw_textured_prism(stair_x, height + 0.02, stair_z, 0.1, self.stair_texture)
+        glPopAttrib()
 
 
-    # Dentro de render_people_3d
     def render_people_3d(self, floor_index, height, delta_time):
         glPushAttrib(GL_ALL_ATTRIB_BITS)
+
+        # Aplicar el mismo desplazamiento en el eje Y que en los pisos
+        y_offset = -0.5  # Ajusta este valor según el nivel del piso
+        height += y_offset
 
         glDisable(GL_TEXTURE_2D)
         glColor3f(1.0, 1.0, 1.0)  # Color por defecto
@@ -295,7 +309,6 @@ class FloorsSimulation(QOpenGLWidget):
 
         for person_index, person in enumerate(safe_zone_people):
             if person.in_safe_zone():
-                
                 continue
 
             target_zone_index = self.person_safe_zone[floor_index][person_index]
@@ -320,7 +333,6 @@ class FloorsSimulation(QOpenGLWidget):
                 color = (0.0, 1.0, 0.0, 1.0) if distance_to_zone <= safe_zone_radius else (1.0, 0.0, 0.0, 1.0)
                 self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-                # Lógica de impresión: mostrar distancia al objetivo
             else:
                 person.move_towards_stair(
                     self.stair_positions[floor_index],
@@ -354,13 +366,12 @@ class FloorsSimulation(QOpenGLWidget):
             color = (0.0, 1.0, 0.0, 1.0) if distance_to_stair <= stair_radius else (1.0, 0.0, 0.0, 1.0)
             self.draw_cube(person.x, height + 0.05, person.y, 0.04, color)
 
-            # Lógica de impresión: mostrar distancia a la escalera
-
         # Solo eliminar a las personas que realmente llegaron a las escaleras
         for person in to_remove:
             self.floors[floor_index].remove(person)
 
         glPopAttrib()
+
 
     def check_all_safe(self):
         all_safe = all(person.is_completely_safe for floor in self.floors for person in floor)
